@@ -16,7 +16,7 @@ export default function Header() {
             <h1>Foodie</h1>
         </div>
         <nav>
-            <Button textOnly={true} >Cart ({totalCartItems})</Button>
+            <Button textOnly >Cart ({totalCartItems})</Button>
         </nav>
     </header>
   );
