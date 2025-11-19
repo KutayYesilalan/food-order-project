@@ -1,9 +1,9 @@
-import fs from 'node:fs/promises';
-
 import bodyParser from 'body-parser';
 import express from 'express';
-import bcrypt from 'bcryptjs';
-import { authenticateToken, generateToken } from './middleware/auth.js';
+import dotenv from 'dotenv';
+import { supabase } from './config/supabase.js';
+
+dotenv.config();
 
 const app = express();
 
@@ -17,7 +17,35 @@ app.use((req, res, next) => {
   next();
 });
 
-// Authentication endpoints
+// Middleware to verify Supabase JWT token
+const authenticateSupabase = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const token = authHeader.substring(7);
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    res.status(401).json({ message: 'Authentication failed' });
+  }
+};
+
+// ============================================
+// AUTHENTICATION ENDPOINTS
+// ============================================
+
 app.post('/auth/signup', async (req, res) => {
   const { email, password, name } = req.body;
 
@@ -34,35 +62,43 @@ app.post('/auth/signup', async (req, res) => {
   }
 
   try {
-    const usersData = await fs.readFile('./data/users.json', 'utf8');
-    const users = JSON.parse(usersData);
+    // Sign up with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name
+        }
+      }
+    });
 
-    const existingUser = users.find(user => user.email === email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+    if (error) {
+      return res.status(400).json({ message: error.message });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = {
-      id: Date.now().toString(),
-      email,
-      name,
-      password: hashedPassword,
-      createdAt: new Date().toISOString()
-    };
+    // Create profile in profiles table (handled by trigger, but we can also do it manually)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert([
+        {
+          id: data.user.id,
+          email: data.user.email,
+          name: name
+        }
+      ]);
 
-    users.push(newUser);
-    await fs.writeFile('./data/users.json', JSON.stringify(users, null, 2));
-
-    const token = generateToken(newUser.id, newUser.email);
+    if (profileError && profileError.code !== '23505') { // Ignore duplicate key error
+      console.error('Profile creation error:', profileError);
+    }
 
     res.status(201).json({
       message: 'User created successfully',
-      token,
+      token: data.session?.access_token,
       user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name
+        id: data.user.id,
+        email: data.user.email,
+        name: name
       }
     });
   } catch (error) {
@@ -79,28 +115,29 @@ app.post('/auth/login', async (req, res) => {
   }
 
   try {
-    const usersData = await fs.readFile('./data/users.json', 'utf8');
-    const users = JSON.parse(usersData);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-    const user = users.find(u => u.email === email);
-    if (!user) {
+    if (error) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    const token = generateToken(user.id, user.email);
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', data.user.id)
+      .single();
 
     res.json({
       message: 'Login successful',
-      token,
+      token: data.session.access_token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name
+        id: data.user.id,
+        email: data.user.email,
+        name: profile?.name || data.user.email.split('@')[0]
       }
     });
   } catch (error) {
@@ -109,21 +146,19 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
-app.get('/auth/verify', authenticateToken, async (req, res) => {
+app.get('/auth/verify', authenticateSupabase, async (req, res) => {
   try {
-    const usersData = await fs.readFile('./data/users.json', 'utf8');
-    const users = JSON.parse(usersData);
-
-    const user = users.find(u => u.id === req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', req.user.id)
+      .single();
 
     res.json({
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name
+        id: req.user.id,
+        email: req.user.email,
+        name: profile?.name || req.user.email.split('@')[0]
       }
     });
   } catch (error) {
@@ -132,64 +167,162 @@ app.get('/auth/verify', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// MEALS ENDPOINTS
+// ============================================
+
 app.get('/meals', async (req, res) => {
-  const meals = await fs.readFile('./data/available-meals.json', 'utf8');
-  res.json(JSON.parse(meals));
+  try {
+    const { data, error } = await supabase
+      .from('meals')
+      .select('*')
+      .order('name');
+
+    if (error) {
+      throw error;
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Get meals error:', error);
+    res.status(500).json({ message: 'Error fetching meals' });
+  }
 });
 
-app.post('/orders', authenticateToken, async (req, res) => {
+// ============================================
+// ORDERS ENDPOINTS
+// ============================================
+
+app.post('/orders', authenticateSupabase, async (req, res) => {
   const orderData = req.body.order;
 
-  if (orderData === null || orderData.items === null || orderData.items.length === 0) {
-    return res
-      .status(400)
-      .json({ message: 'Missing data.' });
+  if (!orderData || !orderData.items || orderData.items.length === 0) {
+    return res.status(400).json({ message: 'Missing data.' });
   }
 
   if (
-    orderData.customer.email === null ||
+    !orderData.customer.email ||
     !orderData.customer.email.includes('@') ||
-    orderData.customer.name === null ||
+    !orderData.customer.name ||
     orderData.customer.name.trim() === '' ||
-    orderData.customer.street === null ||
+    !orderData.customer.street ||
     orderData.customer.street.trim() === '' ||
-    orderData.customer['postal-code'] === null ||
+    !orderData.customer['postal-code'] ||
     orderData.customer['postal-code'].trim() === '' ||
-    orderData.customer.city === null ||
+    !orderData.customer.city ||
     orderData.customer.city.trim() === ''
   ) {
     return res.status(400).json({
-      message:
-        'Missing data: Email, name, street, postal code or city is missing.',
+      message: 'Missing data: Email, name, street, postal code or city is missing.',
     });
   }
 
-  const newOrder = {
-    ...orderData,
-    id: (Math.random() * 1000).toString(),
-    userId: req.user.userId,
-    createdAt: new Date().toISOString()
-  };
-  const orders = await fs.readFile('./data/orders.json', 'utf8');
-  const allOrders = JSON.parse(orders);
-  allOrders.push(newOrder);
-  await fs.writeFile('./data/orders.json', JSON.stringify(allOrders));
-  res.status(201).json({ message: 'Order created!' });
+  try {
+    // Insert order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert([
+        {
+          user_id: req.user.id,
+          customer_name: orderData.customer.name,
+          customer_email: orderData.customer.email,
+          customer_street: orderData.customer.street,
+          customer_postal_code: orderData.customer['postal-code'],
+          customer_city: orderData.customer.city
+        }
+      ])
+      .select()
+      .single();
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    // Insert order items
+    const orderItems = orderData.items.map(item => ({
+      order_id: order.id,
+      meal_id: item.id,
+      meal_name: item.name,
+      meal_price: parseFloat(item.price),
+      meal_description: item.description,
+      meal_image: item.image,
+      quantity: item.quantity
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      throw itemsError;
+    }
+
+    res.status(201).json({ message: 'Order created!' });
+  } catch (error) {
+    console.error('Create order error:', error);
+    res.status(500).json({ message: 'Error creating order' });
+  }
 });
 
-app.get('/orders', authenticateToken, async (req, res) => {
+app.get('/orders', authenticateSupabase, async (req, res) => {
   try {
-    const ordersData = await fs.readFile('./data/orders.json', 'utf8');
-    const allOrders = JSON.parse(ordersData);
+    // Get user's orders
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
 
-    const userOrders = allOrders.filter(order => order.userId === req.user.userId);
+    if (ordersError) {
+      throw ordersError;
+    }
 
-    res.json(userOrders);
+    // Get order items for each order
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const { data: items, error: itemsError } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id);
+
+        if (itemsError) {
+          throw itemsError;
+        }
+
+        // Format to match the old structure
+        return {
+          id: order.id,
+          userId: order.user_id,
+          createdAt: order.created_at,
+          customer: {
+            name: order.customer_name,
+            email: order.customer_email,
+            street: order.customer_street,
+            'postal-code': order.customer_postal_code,
+            city: order.customer_city
+          },
+          items: items.map(item => ({
+            id: item.meal_id,
+            name: item.meal_name,
+            price: item.meal_price.toString(),
+            description: item.meal_description,
+            image: item.meal_image,
+            quantity: item.quantity
+          }))
+        };
+      })
+    );
+
+    res.json(ordersWithItems);
   } catch (error) {
     console.error('Get orders error:', error);
     res.status(500).json({ message: 'Server error fetching orders' });
   }
 });
+
+// ============================================
+// ERROR HANDLING
+// ============================================
 
 app.use((req, res) => {
   if (req.method === 'OPTIONS') {
@@ -199,4 +332,8 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Not found' });
 });
 
-app.listen(3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Connected to Supabase: ${process.env.SUPABASE_URL}`);
+});
