@@ -60,14 +60,13 @@ h1 {
 }
 
 #meals {
-  width: 90%;
-  max-width: 70rem;
+  width: 100%;
   list-style: none;
-  margin: 2rem auto;
-  padding: 1rem;
+  margin: 0;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .meal-item {
@@ -414,6 +413,212 @@ h1 {
 .error p {
   margin: 0;
   line-height: 1.6;
+}
+
+/* Main Container - Two Column Layout */
+.meals-container {
+  display: flex;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  align-items: flex-start;
+}
+
+/* Left Sidebar - FilterBar */
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+/* Right Content Area */
+.meals-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* FilterBar - Vertical Layout */
+.filter-bar {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Search Box */
+.search-box {
+  width: 100%;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(0, 217, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #e8eaed;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #00d9ff;
+  box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+  background: #0f172a;
+}
+
+.search-box input::placeholder {
+  color: #64748b;
+}
+
+/* Filter Section Headers */
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.filter-section h3 {
+  color: #00d9ff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+/* Category & Price Filter Buttons - Vertical Stack */
+.category-filters,
+.price-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-filters button,
+.price-filters button {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid rgba(0, 217, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.category-filters button:hover,
+.price-filters button:hover {
+  background: rgba(0, 217, 255, 0.1);
+  border-color: #00d9ff;
+  color: #e8eaed;
+  transform: translateX(4px);
+}
+
+.category-filters button.active,
+.price-filters button.active {
+  background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+  border-color: #00d9ff;
+  color: #0f172a;
+  font-weight: 700;
+  transform: translateX(4px);
+  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+/* Sort Dropdown */
+.sort-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sort-box label {
+  color: #00d9ff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sort-box select {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid rgba(0, 217, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #e8eaed;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.sort-box select:focus {
+  outline: none;
+  border-color: #00d9ff;
+  box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+}
+
+/* Scrollbar for Sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.3);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.5);
+}
+
+/* Responsive - Mobile */
+@media (max-width: 968px) {
+  .meals-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+
+  .filter-bar {
+    position: relative;
+  }
+}
+
+/* Tablet - Horizontal filters */
+@media (min-width: 600px) and (max-width: 968px) {
+  .category-filters,
+  .price-filters {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .category-filters button,
+  .price-filters button {
+    flex: 1;
+    min-width: 120px;
+  }
 }
 
 @keyframes fade-slide-up {
