@@ -5,12 +5,14 @@ import Button from './UI/Button.jsx';
 import CartContext from '../store/CartContext.jsx';
 import UserProgressContext from '../store/UserProgressContext.jsx';
 import AuthContext from '../store/AuthContext.jsx';
+import ThemeContext from '../store/ThemeContext.jsx';
 
 export default function Header() {
 
   const cartCtx = useContext(CartContext);
   const userProgressCtx = useContext(UserProgressContext);
   const { isAuthenticated, user } = useContext(AuthContext);
+  const { theme, toggleTheme } = useContext(ThemeContext);
   const navigate = useNavigate();
 
   const totalCartItems = cartCtx.items.reduce((totalNumberOfItems, item) => {
@@ -40,6 +42,9 @@ export default function Header() {
             <h1>Foodie</h1>
         </div>
         <nav>
+            <Button textOnly onClick={toggleTheme}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </Button>
             <Button textOnly onClick={handleShowCart}>Cart ({totalCartItems})</Button>
             {isAuthenticated ? (
               <>
