@@ -13,10 +13,13 @@ export default function MealItem({ meal }) {
         cartCtx.addItem(meal);
     }
 
+    // Use image URL directly if it's a full URL, otherwise prepend BACKEND_URL
+    const imageUrl = image.startsWith('http') ? image : `${BACKEND_URL}/${image}`;
+
     return (
         <li className="meal-item">
             <article>
-                <img src={`${BACKEND_URL}/${image}`} alt={name} />
+                <img src={imageUrl} alt={name} />
                 <div>
                     <h3>{name}</h3>
                     <p className="meal-item-price">{currencyFormatter.format(price)}</p>
