@@ -16,6 +16,9 @@ export default function Cart() {
     function handleGoToCheckout() {
         userProgressCtx.showCheckout();
     }
+    function handleClearCart() {
+        cartCtx.clearCart();
+    }
     
 
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price,0)
@@ -27,11 +30,17 @@ export default function Cart() {
             )}
         </ul>
         <p className="cart-total">{currencyFormatter.format(cartTotal)}</p>
+        {cartCtx.items.length > 0 && (
+            <p className="cart-saved-message">Cart saved automatically</p>
+        )}
         <p className="modal-actions">
             <Button textOnly onClick={handleCloseCart}>Close</Button>
-            {cartCtx.items.length > 0 &&
-            <Button textOnly onClick={handleGoToCheckout}>Go to Checkout</Button>
-            }
+            {cartCtx.items.length > 0 && (
+                <>
+                    <Button textOnly onClick={handleClearCart}>Clear Cart</Button>
+                    <Button onClick={handleGoToCheckout}>Go to Checkout</Button>
+                </>
+            )}
         </p>
     </Modal>
 

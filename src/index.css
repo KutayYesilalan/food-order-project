@@ -196,6 +196,14 @@ h1 {
   border-left: 4px solid #00d9ff;
 }
 
+.cart-saved-message {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0.5rem 0;
+  font-style: italic;
+}
+
 .cart-item {
   display: flex;
   justify-content: space-between;
