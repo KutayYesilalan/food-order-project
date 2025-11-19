@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1763551390018",
+    "email": "test@example.com",
+    "name": "Test User",
+    "password": "$2b$10$VY0.FJrdnn4M5hZ3RSGlOu9XodOb5fc22osH246uX0L80qnujfx4S",
+    "createdAt": "2025-11-19T11:23:10.018Z"
+  },
+  {
+    "id": "1763551420372",
+    "email": "yesilalankutay@gmail.com",
+    "name": "Kutay Yesilalan",
+    "password": "$2b$10$C6BkRoqyczhBamCWOK0JQOqoxTqWhLjusChYW8JVp5KXEpmSKQiHO",
+    "createdAt": "2025-11-19T11:23:40.372Z"
+  },
+  {
+    "id": "1763551721462",
+    "email": "john@example.com",
+    "name": "John Doe",
+    "password": "$2b$10$2bcEuXb3G5jt/7eOHwF91euMTAgLw3wG3qk8UdWH80kNQGT6/x7.G",
+    "createdAt": "2025-11-19T11:28:41.462Z"
+  }
+]
