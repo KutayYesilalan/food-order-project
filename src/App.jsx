@@ -9,6 +9,7 @@ import UserProfile from './components/UserProfile.jsx';
 import { CartContextProvider } from './store/CartContext.jsx';
 import { UserProgressContextProvider } from './store/UserProgressContext.jsx';
 import { AuthContextProvider } from './store/AuthContext.jsx';
+import { ThemeContextProvider } from './store/ThemeContext.jsx';
 
 function HomePage() {
   return (
@@ -24,19 +25,21 @@ function HomePage() {
 
 function App() {
   return (
-    <AuthContextProvider>
-      <CartContextProvider>
-        <UserProgressContextProvider>
-          <BrowserRouter>
-            <Header />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/profile" element={<UserProfile />} />
-            </Routes>
-          </BrowserRouter>
-        </UserProgressContextProvider>
-      </CartContextProvider>
-    </AuthContextProvider>
+    <ThemeContextProvider>
+      <AuthContextProvider>
+        <CartContextProvider>
+          <UserProgressContextProvider>
+            <BrowserRouter>
+              <Header />
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/profile" element={<UserProfile />} />
+              </Routes>
+            </BrowserRouter>
+          </UserProgressContextProvider>
+        </CartContextProvider>
+      </AuthContextProvider>
+    </ThemeContextProvider>
   );
 }
 
