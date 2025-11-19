@@ -1,22 +1,27 @@
 import Modal from "./UI/Modal";
-import { useContext, useActionState } from "react";
+import { useContext, useActionState, useMemo } from "react";
 import CartContext from "../store/CartContext.jsx";
 import UserProgressContext from "../store/UserProgressContext.jsx";
+import AuthContext from "../store/AuthContext.jsx";
 import { currencyFormatter } from "../util/formatting";
 import Input from "./UI/Input.jsx";
 import Button from "./UI/Button.jsx";
 import useHttp from "../hooks/useHttp.js";
 import Error from "./Error.jsx";
-const requestConfig = {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-};
+
 export default function Checkout() {
 
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
+    const { isAuthenticated, token } = useContext(AuthContext);
+
+    const requestConfig = useMemo(() => ({
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+    }), [token]);
 
     const { data, error, sendRequest, clearData } = useHttp('http://localhost:3000/orders', requestConfig);
 
@@ -30,6 +35,11 @@ export default function Checkout() {
         userProgressCtx.hideCheckout();
         cartCtx.clearCart();
         clearData()
+    }
+
+    function handleShowLogin() {
+        userProgressCtx.hideCheckout();
+        userProgressCtx.showLogin();
     }
 
     async function checkoutAction(prevState, fd) {
@@ -59,6 +69,19 @@ export default function Checkout() {
 
     if (pending) {
         actions = <span>Sending Order Data...</span>
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleClose}>
+                <h2>Login Required</h2>
+                <p>You need to be logged in to place an order.</p>
+                <p className="modal-actions">
+                    <Button textOnly onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleShowLogin}>Login</Button>
+                </p>
+            </Modal>
+        );
     }
 
     if (data && !error) {
