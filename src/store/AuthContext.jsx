@@ -4,6 +4,7 @@ const AuthContext = createContext({
   user: null,
   token: null,
   isAuthenticated: false,
+  isAdmin: false,
   isLoading: true,
   login: (token, user) => {},
   signup: (token, user) => {},
@@ -54,6 +55,7 @@ export function AuthContextProvider({ children }) {
       const data = await response.json();
       setToken(storedToken);
       setUser(data.user);
+      console.log(data.user)
     } catch (error) {
       console.error('Token verification failed:', error);
       logout();
@@ -91,11 +93,12 @@ export function AuthContextProvider({ children }) {
 
     loadAuthFromStorage();
   }, [verifyToken]);
-
+  debugger
   const contextValue = {
     user,
     token,
     isAuthenticated: !!user && !!token,
+    isAdmin: user?.isAdmin || false,
     isLoading,
     login,
     signup,
