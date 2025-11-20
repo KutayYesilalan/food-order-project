@@ -11,7 +11,7 @@ export default function Header() {
 
   const cartCtx = useContext(CartContext);
   const userProgressCtx = useContext(UserProgressContext);
-  const { isAuthenticated, user } = useContext(AuthContext);
+  const { isAuthenticated, user, isAdmin } = useContext(AuthContext);
   const { theme, toggleTheme } = useContext(ThemeContext);
   const navigate = useNavigate();
 
@@ -35,6 +35,10 @@ export default function Header() {
     navigate('/profile');
   }
 
+  function handleShowAdmin() {
+    navigate('/admin');
+  }
+
   return (
     <header id="main-header">
         <div id="title">
@@ -46,8 +50,14 @@ export default function Header() {
               {theme === 'dark' ? '☀️' : '🌙'}
             </Button>
             <Button textOnly onClick={handleShowCart}>Cart ({totalCartItems})</Button>
+            {console.log(isAdmin, isAuthenticated)}
             {isAuthenticated ? (
               <>
+                {isAdmin && (
+                  <Button textOnly onClick={handleShowAdmin}>
+                    Admin Panel
+                  </Button>
+                )}
                 <Button textOnly onClick={handleShowProfile}>
                   {user.name}
                 </Button>
